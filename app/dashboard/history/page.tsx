@@ -11,18 +11,15 @@ export default async function HistoryPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 p-6 sm:p-8">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">BetZas</p>
-          <h1 className="text-2xl font-semibold">Historial completo</h1>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Historial completo</h1>
         <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
           ← Volver
         </Link>
-      </header>
+      </div>
 
       <TransactionHistory transactions={transactions ?? []} />
-    </main>
+    </div>
   );
 }

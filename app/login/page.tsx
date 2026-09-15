@@ -5,6 +5,7 @@ import { login, signup, type AuthFormState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
   CardContent,
@@ -22,7 +23,10 @@ export default function LoginPage() {
   );
 
   return (
-    <main className="flex min-h-screen flex-1 items-center justify-center p-8">
+    <main className="relative flex min-h-screen flex-1 items-center justify-center p-8">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>BetZas</CardTitle>
