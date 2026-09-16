@@ -6,12 +6,14 @@ const COLORS = {
   wager: "#3987e5",
   gain: "#0ca30c",
   loss: "#d03b3b",
+  withdrawal: "#d95926",
 } as const;
 
 const SERIES_LABEL = {
   wager: "Apostado",
   gain: "Ganancia",
   loss: "Pérdida",
+  withdrawal: "Retiro",
 } as const;
 
 type Slice = { key: keyof typeof COLORS; value: number };
@@ -44,16 +46,19 @@ export function MovementsPieChart({
   wager,
   gain,
   loss,
+  withdrawal,
 }: {
   wager: number;
   gain: number;
   loss: number;
+  withdrawal: number;
 }) {
   const data: Slice[] = (
     [
       ["wager", wager],
       ["gain", gain],
       ["loss", loss],
+      ["withdrawal", withdrawal],
     ] as const
   )
     .filter(([, value]) => value > 0)

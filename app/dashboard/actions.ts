@@ -73,7 +73,7 @@ export async function createTransaction(
     return { error: "Los montos deben ser números válidos mayores o iguales a 0." };
   }
 
-  if (amounts.wager === 0 && amounts.gain === 0 && amounts.loss === 0) {
+  if (Object.values(amounts).every((v) => v === 0)) {
     return {
       error: "Ingresa al menos un monto: apostado, ganancia o pérdida.",
     };

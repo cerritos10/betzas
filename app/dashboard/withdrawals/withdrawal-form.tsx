@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { createTransaction, type CreateTransactionState } from "./actions";
+import { createWithdrawal, type CreateWithdrawalState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,32 +14,27 @@ import {
 } from "@/components/ui/select";
 import { todayInTZ } from "@/lib/date";
 
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; balance: number };
 
-export function CreateTransactionForm({
-  accounts,
-  onSuccess,
-}: {
-  accounts: Account[];
-  onSuccess?: () => void;
-}) {
+export function WithdrawalForm({ accounts }: { accounts: Account[] }) {
   const [state, formAction, pending] = useActionState<
-    CreateTransactionState,
+    CreateWithdrawalState,
     FormData
-  >(createTransaction, undefined);
+  >(createWithdrawal, undefined);
   const wasPending = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (wasPending.current && !pending && !state?.error) {
-      onSuccess?.();
+      formRef.current?.reset();
     }
     wasPending.current = pending;
-  }, [pending, state, onSuccess]);
+  }, [pending, state]);
 
   const today = todayInTZ();
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="account_id">Cuenta</Label>
         <Select name="account_id" defaultValue={accounts[0]?.id}>
@@ -49,11 +44,24 @@ export function CreateTransactionForm({
           <SelectContent>
             {accounts.map((account) => (
               <SelectItem key={account.id} value={account.id}>
-                {account.name}
+                {account.name} — ${account.balance.toFixed(2)} disponible
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="amount">Monto a retirar</Label>
+        <Input
+          id="amount"
+          name="amount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="0.00"
+          required
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -66,49 +74,9 @@ export function CreateTransactionForm({
         />
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        Llena solo los montos que apliquen.
-      </p>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="wager">Apostado</Label>
-        <Input
-          id="wager"
-          name="wager"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="gain">Ganancia</Label>
-        <Input
-          id="gain"
-          name="gain"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="loss">Pérdida</Label>
-        <Input
-          id="loss"
-          name="loss"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-        />
-      </div>
-
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="description">Descripción (opcional)</Label>
-        <Input id="description" name="description" placeholder="Notas del día" />
+        <Input id="description" name="description" placeholder="Ej. transferencia a banco" />
       </div>
 
       {state?.error && (
@@ -116,7 +84,7 @@ export function CreateTransactionForm({
       )}
 
       <Button type="submit" disabled={pending} className="mt-2">
-        {pending ? "Guardando..." : "Registrar"}
+        {pending ? "Guardando..." : "Retirar"}
       </Button>
     </form>
   );

@@ -15,12 +15,14 @@ const COLORS = {
   wager: "#3987e5",
   gain: "#0ca30c",
   loss: "#d03b3b",
+  withdrawal: "#d95926",
 } as const;
 
 const SERIES_LABEL = {
   wager: "Apostado",
   gain: "Ganancia",
   loss: "Pérdida",
+  withdrawal: "Retiro",
 } as const;
 
 type Point = {
@@ -28,6 +30,7 @@ type Point = {
   wager: number;
   gain: number;
   loss: number;
+  withdrawal: number;
 };
 
 function ChartTooltip({
@@ -102,6 +105,7 @@ export function MovementsBarChart({ data }: { data: Point[] }) {
           <Bar dataKey="wager" fill={COLORS.wager} radius={[4, 4, 0, 0]} maxBarSize={20} />
           <Bar dataKey="gain" fill={COLORS.gain} radius={[4, 4, 0, 0]} maxBarSize={20} />
           <Bar dataKey="loss" fill={COLORS.loss} radius={[4, 4, 0, 0]} maxBarSize={20} />
+          <Bar dataKey="withdrawal" fill={COLORS.withdrawal} radius={[4, 4, 0, 0]} maxBarSize={20} />
         </BarChart>
       </ResponsiveContainer>
     </div>

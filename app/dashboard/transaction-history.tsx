@@ -5,10 +5,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { todayInTZ } from "@/lib/date";
 
 type Transaction = {
   id: string;
-  type: "gain" | "loss" | "wager";
+  type: "gain" | "loss" | "wager" | "withdrawal";
   amount: number;
   description: string | null;
   transaction_date: string;
@@ -19,10 +20,18 @@ const TYPE_LABEL: Record<Transaction["type"], string> = {
   gain: "Ganancia",
   loss: "Pérdida",
   wager: "Apuesta",
+  withdrawal: "Retiro",
+};
+
+const TYPE_STYLE: Record<Transaction["type"], { sign: string; color: string }> = {
+  gain: { sign: "+", color: "text-[#0ca30c]" },
+  loss: { sign: "−", color: "text-[#d03b3b]" },
+  wager: { sign: "", color: "text-[#3987e5]" },
+  withdrawal: { sign: "−", color: "text-[#d95926]" },
 };
 
 function formatWhen(transaction: Transaction) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInTZ();
   const time = new Date(transaction.created_at).toLocaleTimeString("es-MX", {
     hour: "numeric",
     minute: "2-digit",
@@ -76,16 +85,8 @@ export function TransactionHistory({
                     {formatWhen(t)}
                   </span>
                 </div>
-                <span
-                  className={
-                    t.type === "gain"
-                      ? "font-semibold text-[#0ca30c]"
-                      : t.type === "loss"
-                        ? "font-semibold text-[#d03b3b]"
-                        : "font-semibold text-[#3987e5]"
-                  }
-                >
-                  {t.type === "gain" ? "+" : t.type === "loss" ? "−" : ""}$
+                <span className={`font-semibold ${TYPE_STYLE[t.type].color}`}>
+                  {TYPE_STYLE[t.type].sign}$
                   {Number(t.amount).toFixed(2)}
                 </span>
               </li>

@@ -6,6 +6,7 @@ const ICON_BG = {
   good: "bg-[#0ca30c]/15 text-[#0ca30c]",
   critical: "bg-[#d03b3b]/15 text-[#d03b3b]",
   blue: "bg-[#3987e5]/15 text-[#3987e5]",
+  orange: "bg-[#d95926]/15 text-[#d95926]",
 } as const;
 
 export function StatCard({

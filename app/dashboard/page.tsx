@@ -1,5 +1,6 @@
 import { Wallet, TrendingUp, TrendingDown, Dice5 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { todayInTZ } from "@/lib/date";
 import {
   Card,
   CardContent,
@@ -15,6 +16,7 @@ import { StatCard } from "./stat-card";
 import { BalanceChart } from "./balance-chart";
 import { MovementsBarChart } from "./movements-bar-chart";
 import { MovementsPieChart } from "./movements-pie-chart";
+import { netAmount, sumType, type Transaction } from "./calculations";
 
 type Account = {
   id: string;
@@ -22,45 +24,19 @@ type Account = {
   initial_balance: number;
 };
 
-type Transaction = {
-  id: string;
-  account_id: string;
-  type: "gain" | "loss" | "wager";
-  amount: number;
-  description: string | null;
-  transaction_date: string;
-  created_at: string;
-};
-
-// El dinero se mueve al apostar (sale del saldo) y al ganar (vuelve el pago
-// completo). "Pérdida" es solo informativa: esa parte de lo apostado ya salió
-// del saldo y nunca vuelve, así que no se resta otra vez aquí.
-function netAmount(transactions: Transaction[]) {
-  return transactions.reduce((sum, t) => {
-    if (t.type === "gain") return sum + Number(t.amount);
-    if (t.type === "wager") return sum - Number(t.amount);
-    return sum;
-  }, 0);
-}
-
-function sumType(transactions: Transaction[], type: Transaction["type"]) {
-  return transactions
-    .filter((t) => t.type === type)
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-}
-
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 function lastSevenDays() {
-  const today = new Date();
+  const [y, m, d] = todayInTZ().split("-").map(Number);
+  const anchor = new Date(Date.UTC(y, m - 1, d));
   const days: { date: string; label: string }[] = [];
 
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
+    const day = new Date(anchor);
+    day.setUTCDate(day.getUTCDate() - i);
     days.push({
-      date: d.toISOString().slice(0, 10),
-      label: i === 0 ? "Hoy" : WEEKDAYS[d.getDay()],
+      date: day.toISOString().slice(0, 10),
+      label: i === 0 ? "Hoy" : WEEKDAYS[day.getUTCDay()],
     });
   }
 
@@ -85,6 +61,7 @@ function buildDailyBreakdown(transactions: Transaction[]) {
       wager: sumType(dayTxs, "wager"),
       gain: sumType(dayTxs, "gain"),
       loss: sumType(dayTxs, "loss"),
+      withdrawal: sumType(dayTxs, "withdrawal"),
     };
   });
 }
@@ -122,7 +99,7 @@ export default async function DashboardPage() {
   const txs = transactions ?? [];
   const totalInitial = accounts.reduce((s, a) => s + Number(a.initial_balance), 0);
   const totalBalance = totalInitial + netAmount(txs);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInTZ();
   const todayTxs = txs.filter((t) => t.transaction_date === today);
   const todayNet = netAmount(todayTxs);
   const todayWagered = sumType(todayTxs, "wager");
@@ -188,6 +165,7 @@ export default async function DashboardPage() {
               wager={sumType(weekTxs, "wager")}
               gain={sumType(weekTxs, "gain")}
               loss={sumType(weekTxs, "loss")}
+              withdrawal={sumType(weekTxs, "withdrawal")}
             />
           </CardContent>
         </Card>
