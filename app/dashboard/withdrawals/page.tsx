@@ -48,7 +48,7 @@ export default async function WithdrawalsPage() {
     supabase.from("accounts").select("id, name, initial_balance"),
     supabase
       .from("transactions")
-      .select("id, account_id, type, amount, description, transaction_date, created_at")
+      .select("id, account_id, type, amount, description, transaction_date, created_at, batch_id")
       .order("transaction_date", { ascending: false })
       .order("created_at", { ascending: false }),
   ]);

@@ -6,6 +6,7 @@ export type Transaction = {
   description: string | null;
   transaction_date: string;
   created_at: string;
+  batch_id: string | null;
 };
 
 // El dinero se mueve al apostar (sale del saldo), al ganar (vuelve el pago

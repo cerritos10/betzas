@@ -6,43 +6,53 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { todayInTZ } from "@/lib/date";
+import type { Transaction } from "./calculations";
+import { MovementGroupRow, type MovementGroup } from "./movement-group-row";
 
-type Transaction = {
-  id: string;
-  type: "gain" | "loss" | "wager" | "withdrawal";
-  amount: number;
-  description: string | null;
-  transaction_date: string;
-  created_at: string;
-};
-
-const TYPE_LABEL: Record<Transaction["type"], string> = {
-  gain: "Ganancia",
-  loss: "Pérdida",
-  wager: "Apuesta",
-  withdrawal: "Retiro",
-};
-
-const TYPE_STYLE: Record<Transaction["type"], { sign: string; color: string }> = {
-  gain: { sign: "+", color: "text-[#0ca30c]" },
-  loss: { sign: "−", color: "text-[#d03b3b]" },
-  wager: { sign: "", color: "text-[#3987e5]" },
-  withdrawal: { sign: "−", color: "text-[#d95926]" },
-};
-
-function formatWhen(transaction: Transaction) {
+function formatWhen(transactionDate: string, createdAt: string) {
   const today = todayInTZ();
-  const time = new Date(transaction.created_at).toLocaleTimeString("es-MX", {
+  const time = new Date(createdAt).toLocaleTimeString("es-MX", {
     hour: "numeric",
     minute: "2-digit",
   });
 
-  if (transaction.transaction_date === today) {
+  if (transactionDate === today) {
     return `Hoy · ${time}`;
   }
 
-  const date = new Date(`${transaction.transaction_date}T00:00:00`);
+  const date = new Date(`${transactionDate}T00:00:00`);
   return date.toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+}
+
+function groupTransactions(transactions: Transaction[]): MovementGroup[] {
+  const order: string[] = [];
+  const groups = new Map<string, Transaction[]>();
+
+  for (const t of transactions) {
+    const key = t.batch_id ?? t.id;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(t);
+  }
+
+  return order.map((key) => {
+    const members = groups.get(key)!;
+    const first = members[0];
+
+    return {
+      key,
+      ids: members.map((m) => m.id),
+      batchId: first.batch_id,
+      accountId: first.account_id,
+      date: first.transaction_date,
+      when: formatWhen(first.transaction_date, first.created_at),
+      description: first.description,
+      members: members.map((m) => ({ type: m.type, amount: Number(m.amount) })),
+      editable: members.every((m) => m.type !== "withdrawal"),
+    };
+  });
 }
 
 export function TransactionHistory({
@@ -52,13 +62,14 @@ export function TransactionHistory({
   transactions: Transaction[];
   limit?: number;
 }) {
-  const visible = limit ? transactions.slice(0, limit) : transactions;
+  const groups = groupTransactions(transactions);
+  const visible = limit ? groups.slice(0, limit) : groups;
 
   return (
     <Card className="w-full">
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Movimientos recientes</CardTitle>
-        {limit && transactions.length > limit && (
+        {limit && groups.length > limit && (
           <Link
             href="/dashboard/history"
             className="text-sm text-muted-foreground hover:text-foreground"
@@ -74,22 +85,8 @@ export function TransactionHistory({
           </p>
         ) : (
           <ul className="divide-y divide-border">
-            {visible.map((t) => (
-              <li key={t.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium">
-                    {TYPE_LABEL[t.type]}
-                    {t.description ? ` · ${t.description}` : ""}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {formatWhen(t)}
-                  </span>
-                </div>
-                <span className={`font-semibold ${TYPE_STYLE[t.type].color}`}>
-                  {TYPE_STYLE[t.type].sign}$
-                  {Number(t.amount).toFixed(2)}
-                </span>
-              </li>
+            {visible.map((group) => (
+              <MovementGroupRow key={group.key} group={group} />
             ))}
           </ul>
         )}

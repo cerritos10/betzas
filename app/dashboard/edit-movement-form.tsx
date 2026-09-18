@@ -1,32 +1,33 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { createTransaction, type CreateTransactionState } from "./actions";
+import { updateMovement, type UpdateMovementState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { todayInTZ } from "@/lib/date";
 
-type Account = { id: string; name: string };
+export type EditableMovement = {
+  ids: string[];
+  batchId: string | null;
+  accountId: string;
+  date: string;
+  description: string;
+  wager: number;
+  gain: number;
+  loss: number;
+};
 
-export function CreateTransactionForm({
-  accounts,
+export function EditMovementForm({
+  movement,
   onSuccess,
 }: {
-  accounts: Account[];
+  movement: EditableMovement;
   onSuccess?: () => void;
 }) {
   const [state, formAction, pending] = useActionState<
-    CreateTransactionState,
+    UpdateMovementState,
     FormData
-  >(createTransaction, undefined);
+  >(updateMovement, undefined);
   const wasPending = useRef(false);
 
   useEffect(() => {
@@ -36,7 +37,6 @@ export function CreateTransactionForm({
     wasPending.current = pending;
   }, [pending, state, onSuccess]);
 
-  const today = todayInTZ();
   const wagerRef = useRef<HTMLInputElement>(null);
   const gainRef = useRef<HTMLInputElement>(null);
   const lossRef = useRef<HTMLInputElement>(null);
@@ -52,65 +52,55 @@ export function CreateTransactionForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="account_id">Cuenta</Label>
-        <Select name="account_id" defaultValue={accounts[0]?.id}>
-          <SelectTrigger id="account_id" className="w-full">
-            <SelectValue placeholder="Selecciona una cuenta" />
-          </SelectTrigger>
-          <SelectContent>
-            {accounts.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <input type="hidden" name="account_id" value={movement.accountId} />
+      {movement.batchId && (
+        <input type="hidden" name="batch_id" value={movement.batchId} />
+      )}
+      {movement.ids.map((id) => (
+        <input key={id} type="hidden" name="member_id" value={id} />
+      ))}
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="transaction_date">Fecha</Label>
+        <Label htmlFor="edit_transaction_date">Fecha</Label>
         <Input
-          id="transaction_date"
+          id="edit_transaction_date"
           name="transaction_date"
           type="date"
-          defaultValue={today}
+          defaultValue={movement.date}
         />
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        Llena solo los montos que apliquen.
-      </p>
-
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="wager">Apostado</Label>
+        <Label htmlFor="edit_wager">Apostado</Label>
         <Input
           ref={wagerRef}
-          id="wager"
+          id="edit_wager"
           name="wager"
           type="number"
           step="0.01"
           min="0"
+          defaultValue={movement.wager || ""}
           placeholder="0.00"
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="gain">Ganancia</Label>
+        <Label htmlFor="edit_gain">Ganancia</Label>
         <Input
           ref={gainRef}
-          id="gain"
+          id="edit_gain"
           name="gain"
           type="number"
           step="0.01"
           min="0"
+          defaultValue={movement.gain || ""}
           placeholder="0.00"
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <Label htmlFor="loss">Pérdida</Label>
+          <Label htmlFor="edit_loss">Pérdida</Label>
           <button
             type="button"
             onClick={calculateLoss}
@@ -121,18 +111,24 @@ export function CreateTransactionForm({
         </div>
         <Input
           ref={lossRef}
-          id="loss"
+          id="edit_loss"
           name="loss"
           type="number"
           step="0.01"
           min="0"
+          defaultValue={movement.loss || ""}
           placeholder="0.00"
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="description">Descripción (opcional)</Label>
-        <Input id="description" name="description" placeholder="Notas del día" />
+        <Label htmlFor="edit_description">Descripción (opcional)</Label>
+        <Input
+          id="edit_description"
+          name="description"
+          defaultValue={movement.description}
+          placeholder="Notas del día"
+        />
       </div>
 
       {state?.error && (
@@ -140,7 +136,7 @@ export function CreateTransactionForm({
       )}
 
       <Button type="submit" disabled={pending} className="mt-2">
-        {pending ? "Guardando..." : "Registrar"}
+        {pending ? "Guardando..." : "Guardar cambios"}
       </Button>
     </form>
   );

@@ -6,7 +6,7 @@ export default async function HistoryPage() {
   const supabase = await createClient();
   const { data: transactions } = await supabase
     .from("transactions")
-    .select("id, account_id, type, amount, description, transaction_date, created_at")
+    .select("id, account_id, type, amount, description, transaction_date, created_at, batch_id")
     .order("transaction_date", { ascending: false })
     .order("created_at", { ascending: false });
 
