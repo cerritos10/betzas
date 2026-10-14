@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { createWithdrawal, type CreateWithdrawalState } from "./actions";
+import { createOperation, type CreateOperationState } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -16,11 +17,11 @@ import { todayInTZ } from "@/lib/date";
 
 type Account = { id: string; name: string; balance: number };
 
-export function WithdrawalForm({ accounts }: { accounts: Account[] }) {
+export function OperationForm({ accounts }: { accounts: Account[] }) {
   const [state, formAction, pending] = useActionState<
-    CreateWithdrawalState,
+    CreateOperationState,
     FormData
-  >(createWithdrawal, undefined);
+  >(createOperation, undefined);
   const wasPending = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -51,8 +52,41 @@ export function WithdrawalForm({ accounts }: { accounts: Account[] }) {
         </Select>
       </div>
 
+      <div className="flex flex-col gap-2">
+        <Label>Tipo</Label>
+        <RadioGroup name="type" defaultValue="withdrawal" className="flex flex-col gap-2.5">
+          <label className="flex items-start gap-2 text-sm">
+            <RadioGroupItem value="withdrawal" className="mt-0.5" />
+            <span>
+              <span className="font-medium">Retiro</span>
+              <span className="block text-xs text-muted-foreground">
+                Resta del saldo actual.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <RadioGroupItem value="deposit" className="mt-0.5" />
+            <span>
+              <span className="font-medium">Depósito</span>
+              <span className="block text-xs text-muted-foreground">
+                Dinero que metes a la cuenta: suma al saldo actual.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <RadioGroupItem value="income" className="mt-0.5" />
+            <span>
+              <span className="font-medium">Ingreso</span>
+              <span className="block text-xs text-muted-foreground">
+                Dinero recuperado fuera de la cuenta: no afecta el saldo actual.
+              </span>
+            </span>
+          </label>
+        </RadioGroup>
+      </div>
+
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="amount">Monto a retirar</Label>
+        <Label htmlFor="amount">Monto</Label>
         <Input
           id="amount"
           name="amount"
@@ -84,7 +118,7 @@ export function WithdrawalForm({ accounts }: { accounts: Account[] }) {
       )}
 
       <Button type="submit" disabled={pending} className="mt-2">
-        {pending ? "Guardando..." : "Retirar"}
+        {pending ? "Guardando..." : "Registrar"}
       </Button>
     </form>
   );

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, History, Banknote } from "lucide-react";
+import { LayoutDashboard, History, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/withdrawals", label: "Retiros", icon: Banknote },
+  { href: "/dashboard/operations", label: "Operaciones", icon: ArrowLeftRight },
   { href: "/dashboard/history", label: "Historial", icon: History },
 ];
 

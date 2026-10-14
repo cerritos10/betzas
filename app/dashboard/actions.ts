@@ -225,7 +225,7 @@ export async function deleteMovement(ids: string[]) {
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/history");
-  revalidatePath("/dashboard/withdrawals");
+  revalidatePath("/dashboard/operations");
 }
 
 export async function deleteAccount(accountId: string) {

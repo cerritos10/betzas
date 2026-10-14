@@ -23,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { EditMovementForm } from "./edit-movement-form";
+import { EditOperationForm } from "./operations/edit-operation-form";
 import { deleteMovement } from "./actions";
 import type { Transaction } from "./calculations";
 
@@ -31,6 +32,8 @@ const TYPE_LABEL: Record<Transaction["type"], string> = {
   loss: "Pérdida",
   wager: "Apostado",
   withdrawal: "Retiro",
+  deposit: "Depósito",
+  income: "Ingreso",
 };
 
 const TYPE_STYLE: Record<Transaction["type"], { sign: string; color: string }> = {
@@ -38,6 +41,8 @@ const TYPE_STYLE: Record<Transaction["type"], { sign: string; color: string }> =
   loss: { sign: "−", color: "text-[#d03b3b]" },
   wager: { sign: "", color: "text-[#3987e5]" },
   withdrawal: { sign: "−", color: "text-[#d95926]" },
+  deposit: { sign: "+", color: "text-[#199e70]" },
+  income: { sign: "+", color: "text-[#199e70]" },
 };
 
 export type MovementGroup = {
@@ -49,7 +54,7 @@ export type MovementGroup = {
   when: string;
   description: string | null;
   members: { type: Transaction["type"]; amount: number }[];
-  editable: boolean;
+  editKind: "movement" | "operation" | null;
 };
 
 export function MovementGroupRow({ group }: { group: MovementGroup }) {
@@ -74,7 +79,7 @@ export function MovementGroupRow({ group }: { group: MovementGroup }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        {group.editable && (
+        {group.editKind && (
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger
               render={<Button type="button" variant="ghost" size="icon-sm" aria-label="Editar" />}
@@ -82,25 +87,49 @@ export function MovementGroupRow({ group }: { group: MovementGroup }) {
               <Pencil className="size-3.5" />
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Editar movimiento</DialogTitle>
-                <DialogDescription>
-                  Modifica los montos, la fecha o la descripción.
-                </DialogDescription>
-              </DialogHeader>
-              <EditMovementForm
-                movement={{
-                  ids: group.ids,
-                  batchId: group.batchId,
-                  accountId: group.accountId,
-                  date: group.date,
-                  description: group.description ?? "",
-                  wager: group.members.find((m) => m.type === "wager")?.amount ?? 0,
-                  gain: group.members.find((m) => m.type === "gain")?.amount ?? 0,
-                  loss: group.members.find((m) => m.type === "loss")?.amount ?? 0,
-                }}
-                onSuccess={() => setEditOpen(false)}
-              />
+              {group.editKind === "movement" ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Editar movimiento</DialogTitle>
+                    <DialogDescription>
+                      Modifica los montos, la fecha o la descripción.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <EditMovementForm
+                    movement={{
+                      ids: group.ids,
+                      batchId: group.batchId,
+                      accountId: group.accountId,
+                      date: group.date,
+                      description: group.description ?? "",
+                      wager: group.members.find((m) => m.type === "wager")?.amount ?? 0,
+                      gain: group.members.find((m) => m.type === "gain")?.amount ?? 0,
+                      loss: group.members.find((m) => m.type === "loss")?.amount ?? 0,
+                    }}
+                    onSuccess={() => setEditOpen(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle>Editar operación</DialogTitle>
+                    <DialogDescription>
+                      Modifica el tipo, el monto, la fecha o la descripción.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <EditOperationForm
+                    operation={{
+                      id: group.ids[0],
+                      accountId: group.accountId,
+                      type: group.members[0].type as "withdrawal" | "deposit" | "income",
+                      amount: group.members[0].amount,
+                      date: group.date,
+                      description: group.description ?? "",
+                    }}
+                    onSuccess={() => setEditOpen(false)}
+                  />
+                </>
+              )}
             </DialogContent>
           </Dialog>
         )}

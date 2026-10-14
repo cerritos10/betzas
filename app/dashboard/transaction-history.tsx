@@ -50,7 +50,13 @@ function groupTransactions(transactions: Transaction[]): MovementGroup[] {
       when: formatWhen(first.transaction_date, first.created_at),
       description: first.description,
       members: members.map((m) => ({ type: m.type, amount: Number(m.amount) })),
-      editable: members.every((m) => m.type !== "withdrawal"),
+      editKind:
+        members.length === 1 &&
+        ["withdrawal", "deposit", "income"].includes(members[0].type)
+          ? ("operation" as const)
+          : members.every((m) => m.type === "wager" || m.type === "gain" || m.type === "loss")
+            ? ("movement" as const)
+            : null,
     };
   });
 }

@@ -14,9 +14,17 @@ import { TransactionHistory } from "./transaction-history";
 import { AccountList } from "./account-list";
 import { StatCard } from "./stat-card";
 import { BalanceChart } from "./balance-chart";
-import { MovementsBarChart } from "./movements-bar-chart";
+import { MovementsPeriodChart } from "./movements-period-chart";
+import { NetResultPeriodChart } from "./net-result-period-chart";
 import { MovementsPieChart } from "./movements-pie-chart";
-import { netAmount, sumType, type Transaction } from "./calculations";
+import {
+  netAmount,
+  sumType,
+  bettingResult,
+  lastNMonths,
+  lastNWeeks,
+  type Transaction,
+} from "./calculations";
 
 type Account = {
   id: string;
@@ -53,17 +61,59 @@ function buildChartData(totalInitial: number, transactions: Transaction[]) {
   }));
 }
 
+function breakdownFor(transactions: Transaction[]) {
+  return {
+    wager: sumType(transactions, "wager"),
+    gain: sumType(transactions, "gain"),
+    loss: sumType(transactions, "loss"),
+    withdrawal: sumType(transactions, "withdrawal"),
+  };
+}
+
 function buildDailyBreakdown(transactions: Transaction[]) {
-  return lastSevenDays().map(({ date, label }) => {
-    const dayTxs = transactions.filter((t) => t.transaction_date === date);
-    return {
-      label,
-      wager: sumType(dayTxs, "wager"),
-      gain: sumType(dayTxs, "gain"),
-      loss: sumType(dayTxs, "loss"),
-      withdrawal: sumType(dayTxs, "withdrawal"),
-    };
-  });
+  return lastSevenDays().map(({ date, label }) => ({
+    label,
+    ...breakdownFor(transactions.filter((t) => t.transaction_date === date)),
+  }));
+}
+
+function buildWeeklyBreakdown(transactions: Transaction[], todayStr: string) {
+  return lastNWeeks(8, todayStr).map(({ start, end, label }) => ({
+    label,
+    ...breakdownFor(
+      transactions.filter((t) => t.transaction_date >= start && t.transaction_date <= end)
+    ),
+  }));
+}
+
+function buildMonthlyBreakdown(transactions: Transaction[], todayStr: string) {
+  return lastNMonths(6, todayStr).map(({ key, label }) => ({
+    label,
+    ...breakdownFor(transactions.filter((t) => t.transaction_date.startsWith(key))),
+  }));
+}
+
+function buildDailyResult(transactions: Transaction[]) {
+  return lastSevenDays().map(({ date, label }) => ({
+    label,
+    result: bettingResult(transactions.filter((t) => t.transaction_date === date)),
+  }));
+}
+
+function buildWeeklyResult(transactions: Transaction[], todayStr: string) {
+  return lastNWeeks(8, todayStr).map(({ start, end, label }) => ({
+    label,
+    result: bettingResult(
+      transactions.filter((t) => t.transaction_date >= start && t.transaction_date <= end)
+    ),
+  }));
+}
+
+function buildMonthlyResult(transactions: Transaction[], todayStr: string) {
+  return lastNMonths(6, todayStr).map(({ key, label }) => ({
+    label,
+    result: bettingResult(transactions.filter((t) => t.transaction_date.startsWith(key))),
+  }));
 }
 
 export default async function DashboardPage() {
@@ -101,10 +151,15 @@ export default async function DashboardPage() {
   const totalBalance = totalInitial + netAmount(txs);
   const today = todayInTZ();
   const todayTxs = txs.filter((t) => t.transaction_date === today);
-  const todayNet = netAmount(todayTxs);
+  const todayResult = bettingResult(todayTxs);
   const todayWagered = sumType(todayTxs, "wager");
   const chartData = buildChartData(totalInitial, txs);
   const dailyBreakdown = buildDailyBreakdown(txs);
+  const weeklyBreakdown = buildWeeklyBreakdown(txs, today);
+  const monthlyBreakdown = buildMonthlyBreakdown(txs, today);
+  const dailyResult = buildDailyResult(txs);
+  const weeklyResult = buildWeeklyResult(txs, today);
+  const monthlyResult = buildMonthlyResult(txs, today);
   const weekTxs = txs.filter((t) => chartData.some((d) => d.date === t.transaction_date));
 
   const accountsWithBalance = accounts.map((account: Account) => ({
@@ -131,10 +186,10 @@ export default async function DashboardPage() {
         />
         <StatCard
           label="Resultado de hoy"
-          value={`${todayNet >= 0 ? "+" : "−"}$${Math.abs(todayNet).toFixed(2)}`}
-          icon={todayNet >= 0 ? TrendingUp : TrendingDown}
-          iconColor={todayNet >= 0 ? "good" : "critical"}
-          valueTone={todayNet >= 0 ? "good" : "critical"}
+          value={`${todayResult >= 0 ? "+" : "−"}$${Math.abs(todayResult).toFixed(2)}`}
+          icon={todayResult >= 0 ? TrendingUp : TrendingDown}
+          iconColor={todayResult >= 0 ? "good" : "critical"}
+          valueTone={todayResult >= 0 ? "good" : "critical"}
         />
         <StatCard
           label="Apostado hoy"
@@ -172,12 +227,29 @@ export default async function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Apostado, ganancia y pérdida</CardTitle>
-          <span className="text-sm text-muted-foreground">Últimos 7 días</span>
+        <CardHeader>
+          <CardTitle>Resultado neto</CardTitle>
+          <CardDescription>Ganancia menos lo apostado en cada periodo.</CardDescription>
         </CardHeader>
         <CardContent>
-          <MovementsBarChart data={dailyBreakdown} />
+          <NetResultPeriodChart
+            daily={dailyResult}
+            weekly={weeklyResult}
+            monthly={monthlyResult}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Apostado, ganancia y pérdida</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MovementsPeriodChart
+            daily={dailyBreakdown}
+            weekly={weeklyBreakdown}
+            monthly={monthlyBreakdown}
+          />
         </CardContent>
       </Card>
 

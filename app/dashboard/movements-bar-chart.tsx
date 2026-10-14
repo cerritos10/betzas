@@ -25,7 +25,7 @@ const SERIES_LABEL = {
   withdrawal: "Retiro",
 } as const;
 
-type Point = {
+export type Point = {
   label: string;
   wager: number;
   gain: number;
